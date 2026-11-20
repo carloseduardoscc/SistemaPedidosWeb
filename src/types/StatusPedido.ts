@@ -1,0 +1,1 @@
+export type StatusPedido = "CANCELADO" | "ENTREGUE" | "ENVIADO" | "PAGO" | "PENDENTE"
