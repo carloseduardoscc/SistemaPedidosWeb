@@ -206,7 +206,7 @@
 }
 
 .pedido-cancelar:disabled {
-  cursor: progress;
+  cursor:not-allowed;
   opacity: 0.65;
 }
 
@@ -231,7 +231,7 @@
 }
 
 .pedido-enviar:disabled {
-  cursor: progress;
+  cursor: not-allowed;
   opacity: 0.65;
 }
 
@@ -256,7 +256,7 @@
 }
 
 .pedido-entregar:disabled {
-  cursor: progress;
+  cursor: not-allowed;
   opacity: 0.65;
 }
 

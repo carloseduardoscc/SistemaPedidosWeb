@@ -7,4 +7,5 @@ export type ItemDetalhadoDTO = {
     nomeProduto: string
     valorTotal: number
     quantidade: number
+    precoUnitario: number
 }

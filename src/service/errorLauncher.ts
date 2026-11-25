@@ -40,7 +40,7 @@ export async function errorLauncher(erro: any): Promise<ErroResumido | null> {
                 // Tenta renovar a sessão
                 await apiRefreshToken()
                 // Caso renove a sessão com sucesso cancela o lançamento do erro
-                // window.location.href = window.location.href
+                window.location.href = window.location.href
                 console.error("errorLauncher - Sessão expirada foi renovada, nulificando erro")
                 erroResumido.tipo = undefined
                 erroResumido.mensagem = undefined
@@ -56,9 +56,9 @@ export async function errorLauncher(erro: any): Promise<ErroResumido | null> {
                     return erroResumido
                 } catch (error: any) {
                     // Trata erro ao falhar tentanto fazer logout
-                    const body = await error.json()
+                    error = await error
                     erroResumido.tipo = "Erro ao realizar logout!"
-                    erroResumido.mensagem = body.erros[0]?.mensagem ?? error
+                    erroResumido.mensagem = error?.mensagem ?? error
                     console.error("errorLauncher - Falha ao realizar logout")
                     return erroResumido
                 }

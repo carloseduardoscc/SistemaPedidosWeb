@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 // @ts-ignore
 import './css/pedidos.css'
-import { PedidoDTO } from '../types/PedidoDTOType'
 import { PedidoDetalhadoDTO } from '../types/PedidoDetalhadoDTO'
 import { StatusPedido } from '../types/StatusPedido'
 import { apiBuscarMeusPedidos, apiBuscarPedidoDetalhado, apiBuscarPedidos, apiCancelarPedido, apiTornarPedidoEntregue, apiTornarPedidoEnviado } from '../service/pedidoService'
@@ -13,6 +12,7 @@ import { addPopup } from '../app/InfoLayer'
 import { useAuth } from '../contexts/AuthContext'
 import { UsuarioDTO } from '../types/UsuarioDTO'
 import ProtectedComponent from '../app/ProtectedComponent'
+import { PedidoDTO } from '../types/PedidoDTOType'
 
 const statusLabels: Record<StatusPedido, string> = {
     CANCELADO: 'Cancelado',
@@ -348,9 +348,9 @@ function DetalhePedido() {
                                         <div>
                                             <strong><a onClick={() => navigate("/produtos/" + item.produto.id)}>{item.nomeProduto}</a></strong>
                                             <span>Quantidade: {item.quantidade}</span>
-                                            <span>Preço un.: {formatarMoeda(item.produto.precoUnitario)}</span>
+                                            <span>Preço un.: {formatarMoeda(item.precoUnitario)}</span>
                                         </div>
-                                        <strong>{formatarMoeda(item.valorTotal)}</strong>
+                                        <strong>{formatarMoeda(item.quantidade * item.precoUnitario)}</strong>
                                     </li>
                                 ))}
                             </ul>
