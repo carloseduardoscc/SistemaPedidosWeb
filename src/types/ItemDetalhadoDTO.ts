@@ -1,7 +1,7 @@
 import { ProdutoDTO } from "./ProdutoDTO"
 
 export type ItemDetalhadoDTO = {
-    id: string
+    itemId: string
     pedidoId: string
     produto: ProdutoDTO
     nomeProduto: string

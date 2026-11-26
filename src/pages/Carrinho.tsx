@@ -31,10 +31,10 @@ function ItemCarrinho({
             >
                 <span className="carrinho-item__nome">{item.nomeProduto}</span>
                 <span className="carrinho-item__preco">
-                    Valor unitário: {formatarMoeda(item.produto.precoUnitario)}
+                    Valor unitário: {formatarMoeda(item.precoUnitario)}
                 </span>
                 <span className="carrinho-item__preco">
-                    Valor Total: {formatarMoeda(item.quantidade * item.produto.precoUnitario)}
+                    Valor Total: {formatarMoeda(item.quantidade * item.precoUnitario)}
                 </span>
             </button>
             <div className="carrinho-item__acoes">
@@ -42,7 +42,7 @@ function ItemCarrinho({
                     <button
                         type="button"
                         aria-label={`Diminuir quantidade de ${item.nomeProduto}`}
-                        onClick={() => aoAlterarQuantidade(item.id, item.quantidade - 1)}
+                        onClick={() => aoAlterarQuantidade(item.itemId, item.quantidade - 1)}
                         disabled={item.quantidade <= 1}
                     >
                         -
@@ -51,7 +51,7 @@ function ItemCarrinho({
                     <button
                         type="button"
                         aria-label={`Aumentar quantidade de ${item.nomeProduto}`}
-                        onClick={() => aoAlterarQuantidade(item.id, item.quantidade + 1)}
+                        onClick={() => aoAlterarQuantidade(item.itemId, item.quantidade + 1)}
                     >
                         +
                     </button>
@@ -59,7 +59,7 @@ function ItemCarrinho({
                 <button
                     className="carrinho-item__excluir"
                     type="button"
-                    onClick={() => aoExcluir(item.id)}
+                    onClick={() => aoExcluir(item.itemId)}
                 >
                     Excluir
                 </button>
@@ -105,9 +105,9 @@ export default function Carrinho() {
 
     async function alterarQuantidade(id: string, quantidade: number) {
         atualizarItens(itens.map(item =>
-            item.id === id ? { ...item, quantidade: Math.max(1, quantidade) } : item
+            item.itemId === id ? { ...item, quantidade: Math.max(1, quantidade) } : item
         ))
-        const item = itens.find(i => i.id === id)
+        const item = itens.find(i => i.itemId === id)
         if (!item) throw Error("Item undefined!")
         await apiAtualizarItem({ quantidade: quantidade }, id)
     }
@@ -115,7 +115,7 @@ export default function Carrinho() {
     function excluirItem(itemId: string) {
         apiDeletarItem(itemId)
             .then(() => {
-                atualizarItens(itens.filter(item => item.id !== itemId))
+                atualizarItens(itens.filter(item => item.itemId !== itemId))
             })
     }
 
@@ -155,7 +155,7 @@ export default function Carrinho() {
                     <ul className="carrinho-lista">
                         {itens.map(item => (
                             <ItemCarrinho
-                                key={item.id}
+                                key={item.itemId}
                                 item={item}
                                 aoExcluir={id => excluirItem(id)}
                                 aoAlterarQuantidade={alterarQuantidade}
@@ -166,7 +166,7 @@ export default function Carrinho() {
 
                 <div className="carrinho-resumo">
                     <p className="carrinho-total" aria-live="polite">
-                        Valor total: <strong>{pedido ? formatarMoeda(pedido.itens.reduce((total, item) => total + (item.quantidade * item.produto.precoUnitario), 0)) : ""}</strong>
+                        Valor total: <strong>{pedido ? formatarMoeda(pedido.itens.reduce((total, item) => total + (item.quantidade * item.precoUnitario), 0)) : ""}</strong>
                     </p>
                     <button
                         className="carrinho-confirmar"
