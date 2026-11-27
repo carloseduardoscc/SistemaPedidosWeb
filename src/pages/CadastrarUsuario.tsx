@@ -8,6 +8,7 @@ import { apiCadastrar, apiLoginWithGoogle, CadastrarUsuarioDTO } from '../servic
 import PopupInformacao from '../components/PopupInformacao'
 import { addPopup } from '../app/InfoLayer'
 import { ErroResumido } from '../service/errorLauncher'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 export default function CadastrarUsuario() {
     const [name, setName] = useState('')
@@ -137,8 +138,8 @@ export default function CadastrarUsuario() {
                         </div>
                     </div>
 
-                    <button className="register-button" type="submit">
-                        Cadastrar
+                    <button className="register-button" type="submit" disabled={submitRequested}>
+                        {submitRequested ? <LoadingSpinner /> : 'Cadastrar'}
                     </button>
                     <button
                         className="login-google-button"

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { ErroResumido, errorLauncher } from '../service/errorLauncher';
 import { addPopup } from '../app/InfoLayer';
 import { faL } from '@fortawesome/free-solid-svg-icons';
+import LoadingSpinner from '../components/LoadingSpinner'
 
 export default function Login() {
     const [email, setEmail] = useState('')
@@ -86,8 +87,8 @@ export default function Login() {
                         />
                     </div>
 
-                    <button className="login-button" type="submit">
-                        Entrar
+                    <button className="login-button" type="submit" disabled={loginRequested}>
+                        {loginRequested ? <LoadingSpinner /> : 'Entrar'}
                     </button>
                 </form>
 

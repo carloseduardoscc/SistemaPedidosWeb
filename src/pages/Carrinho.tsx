@@ -10,20 +10,25 @@ import { ItemDetalhadoDTO } from '../types/ItemDetalhadoDTO'
 import { apiAtualizarItem, apiDeletarItem } from '../service/itemService'
 import { recarregarPagina } from '../util/Navegacao'
 import { ErroResumido } from '../service/errorLauncher'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 function ItemCarrinho({
     item,
+    processando,
+    desabilitado,
     aoExcluir,
     aoAlterarQuantidade,
 }: {
     item: PedidoDetalhadoDTO['itens'][number]
+    processando: boolean
+    desabilitado: boolean
     aoExcluir: (id: string) => void
     aoAlterarQuantidade: (id: string, quantidade: number) => void
 }) {
     const navigate = useNavigate()
 
     return (
-        <li className="carrinho-item">
+        <li className="carrinho-item" aria-busy={processando}>
             <button
                 className="carrinho-item__produto"
                 type="button"
@@ -38,31 +43,37 @@ function ItemCarrinho({
                 </span>
             </button>
             <div className="carrinho-item__acoes">
-                <div className="carrinho-quantidade" aria-label={`Quantidade de ${item.nomeProduto}`}>
-                    <button
-                        type="button"
-                        aria-label={`Diminuir quantidade de ${item.nomeProduto}`}
-                        onClick={() => aoAlterarQuantidade(item.itemId, item.quantidade - 1)}
-                        disabled={item.quantidade <= 1}
-                    >
-                        -
-                    </button>
-                    <output aria-live="polite">{item.quantidade}</output>
-                    <button
-                        type="button"
-                        aria-label={`Aumentar quantidade de ${item.nomeProduto}`}
-                        onClick={() => aoAlterarQuantidade(item.itemId, item.quantidade + 1)}
-                    >
-                        +
-                    </button>
-                </div>
-                <button
-                    className="carrinho-item__excluir"
-                    type="button"
-                    onClick={() => aoExcluir(item.itemId)}
-                >
-                    Excluir
-                </button>
+                {processando ? <LoadingSpinner /> : (
+                    <>
+                        <div className="carrinho-quantidade" aria-label={`Quantidade de ${item.nomeProduto}`}>
+                            <button
+                                type="button"
+                                aria-label={`Diminuir quantidade de ${item.nomeProduto}`}
+                                onClick={() => aoAlterarQuantidade(item.itemId, item.quantidade - 1)}
+                                disabled={desabilitado || item.quantidade <= 1}
+                            >
+                                -
+                            </button>
+                            <output aria-live="polite">{item.quantidade}</output>
+                            <button
+                                type="button"
+                                aria-label={`Aumentar quantidade de ${item.nomeProduto}`}
+                                onClick={() => aoAlterarQuantidade(item.itemId, item.quantidade + 1)}
+                                disabled={desabilitado}
+                            >
+                                +
+                            </button>
+                        </div>
+                        <button
+                            className="carrinho-item__excluir"
+                            type="button"
+                            onClick={() => aoExcluir(item.itemId)}
+                            disabled={desabilitado}
+                        >
+                            Excluir
+                        </button>
+                    </>
+                )}
             </div>
         </li>
     )
@@ -71,6 +82,8 @@ function ItemCarrinho({
 export default function Carrinho() {
     const [pedido, setPedido] = useState<PedidoDetalhadoDTO | null>(null)
     const [carregando, setCarregando] = useState(true)
+    const [itemEmProcessamento, setItemEmProcessamento] = useState<string | null>(null)
+    const [pagando, setPagando] = useState(false)
     const navigate = useNavigate();
     const itens = pedido?.itens ?? []
 
@@ -104,38 +117,49 @@ export default function Carrinho() {
     }
 
     async function alterarQuantidade(id: string, quantidade: number) {
+        const item = itens.find(i => i.itemId === id)
+        if (!item) throw Error("Item undefined!")
+        setItemEmProcessamento(id)
         atualizarItens(itens.map(item =>
             item.itemId === id ? { ...item, quantidade: Math.max(1, quantidade) } : item
         ))
-        const item = itens.find(i => i.itemId === id)
-        if (!item) throw Error("Item undefined!")
-        await apiAtualizarItem({ quantidade: quantidade }, id)
+        try {
+            await apiAtualizarItem({ quantidade: quantidade }, id)
+        } finally {
+            setItemEmProcessamento(null)
+        }
     }
 
-    function excluirItem(itemId: string) {
-        apiDeletarItem(itemId)
-            .then(() => {
-                atualizarItens(itens.filter(item => item.itemId !== itemId))
-            })
+    async function excluirItem(itemId: string) {
+        setItemEmProcessamento(itemId)
+        try {
+            await apiDeletarItem(itemId)
+            atualizarItens(itens.filter(item => item.itemId !== itemId))
+        } finally {
+            setItemEmProcessamento(null)
+        }
     }
 
-    function confirmarCompra() {
+    async function confirmarCompra() {
         if (!pedido) throw new Error("Pedido null")
-        apiTornarPedidoPago(pedido.id)
-            .then(()=>{
-                addPopup({
-                    tipo: 'modal',
-                    titulo: 'Seu pedido foi pago com sucesso!',
-                    descricao: 'Ele está sendo preparado para entrega por um dos nossos lojistas. Veja o andamento dele em pedidos',
-                    botoes: [{
-                        nome: 'Ver meu pedido',
-                        acao: () => navigate("/pedidos?foco="+pedido.id)
-                    }, {
-                        nome: 'mais tarde',
-                        acao: () => recarregarPagina()
-                    }]
-                })
+        setPagando(true)
+        try {
+            await apiTornarPedidoPago(pedido.id)
+            addPopup({
+                tipo: 'modal',
+                titulo: 'Seu pedido foi pago com sucesso!',
+                descricao: 'Ele está sendo preparado para entrega por um dos nossos lojistas. Veja o andamento dele em pedidos',
+                botoes: [{
+                    nome: 'Ver meu pedido',
+                    acao: () => navigate("/pedidos?foco="+pedido.id)
+                }, {
+                    nome: 'mais tarde',
+                    acao: () => recarregarPagina()
+                }]
             })
+        } finally {
+            setPagando(false)
+        }
     }
 
     return (
@@ -148,7 +172,7 @@ export default function Carrinho() {
 
             <section className="carrinho-card" aria-label="Itens do carrinho">
                 {carregando ? (
-                    <p className="carrinho-vazio">Carregando carrinho...</p>
+                    <LoadingSpinner />
                 ) : itens.length === 0 ? (
                     <p className="carrinho-vazio">Seu carrinho está vazio.</p>
                 ) : (
@@ -157,6 +181,8 @@ export default function Carrinho() {
                             <ItemCarrinho
                                 key={item.itemId}
                                 item={item}
+                                processando={itemEmProcessamento === item.itemId}
+                                desabilitado={itemEmProcessamento !== null}
                                 aoExcluir={id => excluirItem(id)}
                                 aoAlterarQuantidade={alterarQuantidade}
                             />
@@ -171,7 +197,7 @@ export default function Carrinho() {
                     <button
                         className="carrinho-confirmar"
                         type="button"
-                        disabled={carregando || itens.length === 0}
+                        disabled={carregando || pagando || itens.length === 0}
                         onClick={() => {
                             addPopup({
                                 tipo: 'modal',
@@ -189,7 +215,7 @@ export default function Carrinho() {
                             })
                         }}
                     >
-                        Confirmar compra
+                        {pagando ? <LoadingSpinner /> : 'Confirmar compra'}
                     </button>
                 </div>
             </section>

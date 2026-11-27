@@ -10,6 +10,7 @@ import { apiLogout } from '../service/authService'
 import { UsuarioDTO } from '../types/UsuarioDTO'
 import { Pagina } from '../types/PageType'
 import { ErroResumido } from '../service/errorLauncher'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 type Usuario = {
     nome: string
@@ -54,6 +55,7 @@ function EditarUsuario() {
                 navigate("./")
                 recarregarPagina()
             })
+            .finally(() => setIsSubmitRequested(false))
 
         return () => { controller.abort }
     }, [isSubmitRequested])
@@ -86,8 +88,8 @@ function EditarUsuario() {
                     />
                 </div>
                 <div className="me-actions">
-                    <button className="me-button me-button--primary" type="submit">
-                        Atualizar
+                    <button className="me-button me-button--primary" type="submit" disabled={isSubmitRequested}>
+                        {isSubmitRequested ? <LoadingSpinner /> : 'Atualizar'}
                     </button>
                     <button
                         className="me-button me-button--secondary"
@@ -131,20 +133,23 @@ export function DetalhesUsuario() {
         const controller = new AbortController
         async function desativarConta() {
             setDesativandoConta(true)
-            if (!solicitadoDesativarConta) return
-            if (!usuario) throw Error("usuario null")
-            await apiDesativarUsuario(controller.signal, usuario.id)
-            addPopup({
-                titulo: `A conta de ${usuario.email} foi desativada com sucesso`
-            })
-            setDesativandoConta(false)
-            setSolicitadoDesativarConta(false)
-            // @ts-ignore
-            setUsuario(usuario => ({...usuario, ativo: false}))
-            if (usuario.id !== userData?.id) return
-            await apiLogout()
-            await navigate('/home')
-            recarregarPagina()
+            try {
+                if (!solicitadoDesativarConta) return
+                if (!usuario) throw Error("usuario null")
+                await apiDesativarUsuario(controller.signal, usuario.id)
+                addPopup({
+                    titulo: `A conta de ${usuario.email} foi desativada com sucesso`
+                })
+                // @ts-ignore
+                setUsuario(usuario => ({...usuario, ativo: false}))
+                if (usuario.id !== userData?.id) return
+                await apiLogout()
+                await navigate('/home')
+                recarregarPagina()
+            } finally {
+                setDesativandoConta(false)
+                setSolicitadoDesativarConta(false)
+            }
         }
         desativarConta()
         return () => controller.abort()
@@ -245,15 +250,15 @@ export function DetalhesUsuario() {
                                         disabled={ativandoConta}
                                         onClick={handleAtivarConta}
                                     >
-                                        {ativandoConta ? 'Ativando conta...' : 'Ativar conta'}
+                                        {ativandoConta ? <LoadingSpinner /> : 'Ativar conta'}
                                     </button>}
                             </div>
 
-                            {desativandoConta && "Desativando conta deste usuário..."}
+                            {desativandoConta && <LoadingSpinner />}
                         </>
                     }
                 </section>
-                : "Carregando usuário"}
+                : <LoadingSpinner />}
         </main>
     )
 }
@@ -318,7 +323,7 @@ function ListaUsuarios() {
                     </div>
                     <button className="me-button me-button--primary" type="submit">Pesquisar</button>
                 </form>
-                {carregando ? <p className="me-message" role="status">Carregando usuários...</p> : pagina?.content.length
+                {carregando ? <LoadingSpinner /> : pagina?.content.length
                     ? <>
                         <ul className="usuarios-lista">
                             {pagina.content.map(usuario => (

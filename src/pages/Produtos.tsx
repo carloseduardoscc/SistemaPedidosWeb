@@ -14,6 +14,7 @@ import { apiAbrirNovoPedido } from '../service/usuarioService'
 import { useAuth } from '../contexts/AuthContext'
 import { addPopup } from '../app/InfoLayer'
 import { ErroResumido } from '../service/errorLauncher'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 function Produto({ produtoData }: { produtoData: ProdutoDTO }) {
     const [quantidade, setQuantidade] = useState(1)
@@ -31,33 +32,35 @@ function Produto({ produtoData }: { produtoData: ProdutoDTO }) {
                 produtoId: produtoData.id,
                 quantidade: quantidade
             }
-            const pagina = await apiBuscarMeusPedidos(controller.signal)
-            const pedidoPendente = pagina.content.find(p => p.status === "PENDENTE")
-            if (!userData) throw Error("userData nulo")
-            let pedidoId: string
-            if (pedidoPendente?.id) {
-                pedidoId = pedidoPendente.id
-            } else {
-                // Caso o usuário ainda não tenha um pedido aberto, abre um novo para adicionar o primeiro item
-                pedidoId = await apiAbrirNovoPedido(controller.signal, userData.id)
-            }
             try {
-                await apiAdicionarItemAoPedido(controller.signal, pedidoId, dados)
-                addPopup({
-                    titulo: `${quantidade}X ${produtoData.nome} Adicionado${quantidade !== 1 ? 's' : ''} ao carrinho com sucesso!`
-                })
-                navigate("/carrinho")
-            } catch (error: any) {
-                error = await error
-                if (!error.mensagem) throw error
-                const erroResumido: ErroResumido = error
-                if (erroResumido.mensagem !== 'Total do pedido ultrapassou R$ 10.000,00') throw error
-                if (!erroResumido.mensagem) throw Error("erroResumido.mensagem está undefined")
-                addPopup({
-                    titulo: erroResumido.mensagem,
-                    corBackground: "var(--color-error)",
-                    corFonte: "var(--color-white)"
-                })
+                const pagina = await apiBuscarMeusPedidos(controller.signal)
+                const pedidoPendente = pagina.content.find(p => p.status === "PENDENTE")
+                if (!userData) throw Error("userData nulo")
+                let pedidoId: string
+                if (pedidoPendente?.id) {
+                    pedidoId = pedidoPendente.id
+                } else {
+                    // Caso o usuário ainda não tenha um pedido aberto, abre um novo para adicionar o primeiro item
+                    pedidoId = await apiAbrirNovoPedido(controller.signal, userData.id)
+                }
+                try {
+                    await apiAdicionarItemAoPedido(controller.signal, pedidoId, dados)
+                    addPopup({
+                        titulo: `${quantidade}X ${produtoData.nome} Adicionado${quantidade !== 1 ? 's' : ''} ao carrinho com sucesso!`
+                    })
+                    navigate("/carrinho")
+                } catch (error: any) {
+                    error = await error
+                    if (!error.mensagem) throw error
+                    const erroResumido: ErroResumido = error
+                    if (erroResumido.mensagem !== 'Total do pedido ultrapassou R$ 10.000,00') throw error
+                    if (!erroResumido.mensagem) throw Error("erroResumido.mensagem está undefined")
+                    addPopup({
+                        titulo: erroResumido.mensagem,
+                        corBackground: "var(--color-error)",
+                        corFonte: "var(--color-white)"
+                    })
+                }
             } finally {
                 setWasAdicionarAoCarrinhoClicked(false)
             }
@@ -99,8 +102,9 @@ function Produto({ produtoData }: { produtoData: ProdutoDTO }) {
                             className="produto-adicionar-carrinho"
                             type="button"
                             onClick={handleAdicionarAoCarrinho}
+                            disabled={wasAdicionarAoCarrinhoClicked}
                         >
-                            Adicionar ao carrinho
+                            {wasAdicionarAoCarrinhoClicked ? <LoadingSpinner /> : 'Adicionar ao carrinho'}
                         </button>
                     </div>
                     <p className="produto-carrinho__total" aria-live="polite">
@@ -199,12 +203,12 @@ function ProdutoDetalhe() {
                                             ]
                                         })}
                                     >
-                                        {excluindo ? 'Excluindo...' : 'Deletar produto'}
+                                        {excluindo ? <LoadingSpinner /> : 'Deletar produto'}
                                     </button>
                                 </div>
                             </ProtectedComponent>
                         </>
-                    : <span className="produto-loading">Carregando produto...</span>}
+                    : <LoadingSpinner />}
             </div>
         </div>
     )
@@ -217,11 +221,13 @@ function EditarProduto({ produtoData, onCancelar, onAtualizado }: {
 }) {
     const [nome, setNome] = useState(produtoData.nome)
     const [precoUnitario, setPrecoUnitario] = useState(String(produtoData.precoUnitario))
+    const [salvando, setSalvando] = useState(false)
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
         const controller = new AbortController()
         const produtoAtualizado = { ...produtoData, nome, precoUnitario: Number(precoUnitario) }
+        setSalvando(true)
         try {
             await apiAtualizarProduto(controller.signal, produtoAtualizado)
             addPopup({ titulo: 'Produto atualizado com sucesso.' })
@@ -235,6 +241,8 @@ function EditarProduto({ produtoData, onCancelar, onAtualizado }: {
                 descricao: erroResumido.mensagem,
                 corBackground: 'var(--color-error)'
             })
+        } finally {
+            setSalvando(false)
         }
     }
 
@@ -255,8 +263,8 @@ function EditarProduto({ produtoData, onCancelar, onAtualizado }: {
                     required
                 />
             </label>
-            <button className="produto-adicionar-carrinho" type="submit">
-                Salvar alterações
+            <button className="produto-adicionar-carrinho" type="submit" disabled={salvando}>
+                {salvando ? <LoadingSpinner /> : 'Salvar alterações'}
             </button>
             <button className="produto-adicionar-carrinho" type="button" onClick={onCancelar}>
                 Cancelar
@@ -283,7 +291,7 @@ function ItemProduto({ produtoData }: { produtoData: ProdutoDTO }) {
 }
 
 function ListaProdutos() {
-    const [produtos, setProdutos]: [ProdutoDTO[], any] = useState([]);
+    const [produtos, setProdutos]: [ProdutoDTO[], any] = useState();
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -312,9 +320,13 @@ function ListaProdutos() {
                 <p>Escolha um produto para ver mais detalhes.</p>
             </div>
             <ul className="produtos-lista__items">
-                {produtos.map(produto => (
-                    <ItemProduto key={produto.id} produtoData={produto} />
-                ))}
+                {
+                    produtos ?
+                    produtos.map(produto => (
+                        <ItemProduto key={produto.id} produtoData={produto} />
+                    )) :
+                    <li><LoadingSpinner /></li>
+                }
             </ul>
         </div>
     )
@@ -323,11 +335,13 @@ function ListaProdutos() {
 function CadastrarProduto() {
     const [nome, setNome] = useState('')
     const [precoUnitario, setPrecoUnitario] = useState('')
+    const [cadastrando, setCadastrando] = useState(false)
     const navigate = useNavigate()
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
         const controller = new AbortController()
+        setCadastrando(true)
         try {
             await apiCadastrarProduto(controller.signal, {
                 id: null,
@@ -349,6 +363,8 @@ function CadastrarProduto() {
                 descricao: erroResumido.mensagem,
                 corBackground: 'var(--color-error)'
             })
+        } finally {
+            setCadastrando(false)
         }
     }
 
@@ -382,8 +398,8 @@ function CadastrarProduto() {
                         required
                     />
                 </label>
-                <button className="produto-adicionar-carrinho" type="submit">
-                    Cadastrar produto
+                <button className="produto-adicionar-carrinho" type="submit" disabled={cadastrando}>
+                    {cadastrando ? <LoadingSpinner /> : 'Cadastrar produto'}
                 </button>
             </form>
         </section>

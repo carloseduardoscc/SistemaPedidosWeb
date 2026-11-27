@@ -12,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { apiBuscarProdutos } from '../service/produtoService'
 import type { ProdutoDTO } from '../types/ProdutoDTO'
 import formatarMoeda from '../util/Formatador'
+import LoadingSpinner from '../components/LoadingSpinner'
 // @ts-ignore
 import './css/home.css'
 
@@ -182,7 +183,7 @@ export default function Home() {
                     </div>
 
                     {carregando ? (
-                        <p className="home-feedback" role="status">Carregando o catálogo...</p>
+                        <LoadingSpinner />
                     ) : erro ? (
                         <div className="home-feedback home-feedback--error" role="alert">
                             <span>Não foi possível carregar os produtos agora.</span>

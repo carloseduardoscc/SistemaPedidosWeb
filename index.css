@@ -17,6 +17,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -26,4 +30,27 @@ body {
 
 button {
   font: inherit;
+}
+
+.spinner {
+  display: inline-block;
+  width: 3em;
+  height: 3em;
+  border: 0.2em solid var(--color-primary);
+  border-top: 4px solid transparent;
+  border-radius: 50%;
+  animation: spin 0.5s linear infinite;
+}
+
+button .spinner {
+  width: 1em;
+  height: 1em;
+  border-width: 0.12em;
+  border-top-width: 2px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

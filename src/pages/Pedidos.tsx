@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { UsuarioDTO } from '../types/UsuarioDTO'
 import ProtectedComponent from '../app/ProtectedComponent'
 import { PedidoDTO } from '../types/PedidoDTOType'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 const statusLabels: Record<StatusPedido, string> = {
     CANCELADO: 'Cancelado',
@@ -93,7 +94,7 @@ function ListaPedidos() {
                 <p>Selecione um pedido para acompanhar os itens e atualizações.</p>
             </div>
             {carregando ? (
-                <p className="pedidos-mensagem" role="status">Carregando pedidos...</p>
+                <LoadingSpinner />
             ) : pedidos.length === 0 ? (
                 <p className="pedidos-mensagem">Você ainda não fez nenhum pedido.</p>
             ) : (
@@ -215,7 +216,7 @@ function DetalhePedido() {
                 <FontAwesomeIcon icon={faArrowLeft} aria-hidden="true" />
             </button>
             {carregando ? (
-                <p className="pedidos-mensagem" role="status">Carregando pedido...</p>
+                <LoadingSpinner />
             ) : pedido ? (
                 <>
                     <header className="pedido-detalhe__heading">
@@ -254,7 +255,7 @@ function DetalhePedido() {
                                         })
                                     }
                                 >
-                                    {cancelando ? 'Cancelando...' : 'Cancelar pedido'}
+                                    {cancelando ? <LoadingSpinner /> : 'Cancelar pedido'}
                                 </button>
                             </ProtectedComponent>
                             <ProtectedComponent
@@ -282,7 +283,7 @@ function DetalhePedido() {
                                         })
                                     }
                                 >
-                                    {enviando ? 'Tornando pedido enviado...' : 'Tornar pedido enviado'}
+                                    {enviando ? <LoadingSpinner /> : 'Tornar pedido enviado'}
                                 </button>
                             </ProtectedComponent>
                             <ProtectedComponent
@@ -310,7 +311,7 @@ function DetalhePedido() {
                                         })
                                     }
                                 >
-                                    {enviando ? 'Tornando pedido enviado...' : 'Tornar pedido entregue'}
+                                    {entregando ? <LoadingSpinner /> : 'Tornar pedido entregue'}
                                 </button>
                             </ProtectedComponent>
                         </div>
